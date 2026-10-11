@@ -32,9 +32,10 @@ export function getRegistrationSuccessState(email, returnTo, bookingDraft) {
   };
 }
 
-export function getLoginInitialForm(state) {
+
+export function getLoginInitialForm() {
   return {
-    email: typeof state?.email === 'string' ? state.email : '',
+    email: '',
     password: '',
   };
 }

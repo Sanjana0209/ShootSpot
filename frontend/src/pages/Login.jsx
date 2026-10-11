@@ -1,3 +1,4 @@
+
 import { useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { API_URL, saveAuthSession } from '../services/auth';
@@ -8,21 +9,53 @@ import {
 } from '../services/authFlow';
 import { validateEmail } from '../services/validation';
 
+const SAVED_ACCOUNTS_KEY = 'shootspot.savedAccounts';
+
+function getSavedAccounts() {
+  try {
+    const accounts = JSON.parse(
+      localStorage.getItem(SAVED_ACCOUNTS_KEY) || '[]',
+    );
+
+    return Array.isArray(accounts)
+      ? accounts.filter(
+          (email) => typeof email === 'string' && email.length > 0,
+        ).slice(0, 5)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
+
   const [formState, setFormState] = useState(() => ({
+  locationKey: location.key,
+  values: getLoginInitialForm(location.state),
+}));
+
+const [lastLocationKey, setLastLocationKey] = useState(location.key);
+
+if (lastLocationKey !== location.key) {
+  setLastLocationKey(location.key);
+  setFormState({
     locationKey: location.key,
     values: getLoginInitialForm(location.state),
-  }));
+  });
+}
   const formData = formState.locationKey === location.key
     ? formState.values
     : getLoginInitialForm(location.state);
+
+  const [savedAccounts, setSavedAccounts] = useState(() => getSavedAccounts());
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
   const submitting = useRef(false);
 
   const updateFormData = (updates) => {
@@ -37,50 +70,104 @@ function Login() {
     }));
   };
 
+  const selectAccount = (email) => {
+    updateFormData({
+      email,
+      password: '',
+    });
+
+    setErrors({});
+    setTouched({});
+    setMessage('');
+    setShowPassword(false);
+  };
+
+  const useAnotherAccount = () => {
+    updateFormData({
+      email: '',
+      password: '',
+    });
+
+    setErrors({});
+    setTouched({});
+    setMessage('');
+    setShowPassword(false);
+  };
+
   const validate = (field, value) => {
     if (field === 'email') return validateEmail(value);
-    if (field === 'password' && !value) return 'Password is required.';
+
+    if (field === 'password' && !value) {
+      return 'Password is required.';
+    }
+
     return '';
   };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+
     updateFormData({ [name]: value });
     setMessage('');
+
     if (touched[name]) {
-      setErrors((previous) => ({ ...previous, [name]: validate(name, value) }));
+      setErrors((previous) => ({
+        ...previous,
+        [name]: validate(name, value),
+      }));
     }
   };
 
   const handleBlur = (event) => {
     const { name, value } = event.target;
     const normalizedValue = name === 'email' ? value.trim() : value;
+
     updateFormData({ [name]: normalizedValue });
-    setTouched((previous) => ({ ...previous, [name]: true }));
-    setErrors((previous) => ({ ...previous, [name]: validate(name, normalizedValue) }));
+
+    setTouched((previous) => ({
+      ...previous,
+      [name]: true,
+    }));
+
+    setErrors((previous) => ({
+      ...previous,
+      [name]: validate(name, normalizedValue),
+    }));
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
     if (submitting.current) return;
+
     setMessage('');
+
     const normalizedEmail = formData.email.trim();
+
     const validationErrors = {
       email: validate('email', normalizedEmail),
       password: validate('password', formData.password),
     };
+
     updateFormData({ email: normalizedEmail });
     setTouched({ email: true, password: true });
     setErrors(validationErrors);
+
     if (Object.values(validationErrors).some(Boolean)) return;
 
     submitting.current = true;
     setIsSubmitting(true);
+
     try {
       const response = await fetch(`${API_URL}/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: normalizedEmail, password: formData.password }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          password: formData.password,
+        }),
       });
 
       if (!response.ok) {
@@ -89,17 +176,40 @@ function Login() {
       }
 
       const authResponse = await response.json();
+
       saveAuthSession(authResponse);
-      const returnTo = getLoginDestination(authResponse.user, location.state?.returnTo);
-      navigate(
-        returnTo,
-        {
-          replace: true,
-          state: returnTo?.endsWith('/book')
-            ? { bookingDraft: location.state?.bookingDraft }
-            : undefined,
-        },
+
+      const emailToRemember = normalizedEmail.toLowerCase();
+
+      try {
+        const updatedAccounts = [
+          emailToRemember,
+          ...getSavedAccounts().filter(
+            (email) => email.toLowerCase() !== emailToRemember,
+          ),
+        ].slice(0, 5);
+
+        localStorage.setItem(
+          SAVED_ACCOUNTS_KEY,
+          JSON.stringify(updatedAccounts),
+        );
+
+        setSavedAccounts(updatedAccounts);
+      } catch {
+        // Login should still work if browser storage is unavailable.
+      }
+
+      const returnTo = getLoginDestination(
+        authResponse.user,
+        location.state?.returnTo,
       );
+
+      navigate(returnTo, {
+        replace: true,
+        state: returnTo?.endsWith('/book')
+          ? { bookingDraft: location.state?.bookingDraft }
+          : undefined,
+      });
     } catch {
       setMessage('Unable to connect to the server. Please try again.');
     } finally {
@@ -118,30 +228,73 @@ function Login() {
         <h1>Login</h1>
 
         {location.state?.message && (
-          <p className="form-message" role="status">{location.state.message}</p>
+          <p className="form-message" role="status">
+            {location.state.message}
+          </p>
         )}
 
-        <form className="auth-form" onSubmit={handleSubmit} noValidate>
+        {savedAccounts.length > 0 && (
+          <div className="saved-accounts">
+            <p className="helper-text">Choose an account</p>
+
+            {savedAccounts.map((email) => (
+              <button
+                key={email}
+                type="button"
+                className="btn btn-secondary full-width"
+                onClick={() => selectAccount(email)}
+                disabled={isSubmitting}
+              >
+                {email}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              className="helper-text"
+              onClick={useAnotherAccount}
+              disabled={isSubmitting}
+            >
+              Use another account
+            </button>
+          </div>
+        )}
+
+        <form
+          className="auth-form"
+          onSubmit={handleSubmit}
+          noValidate
+          autoComplete="on"
+        >
           <div className="form-group">
             <label htmlFor="email">Email</label>
+
             <input
               id="email"
               name="email"
-              type="text"
+              type="email"
               inputMode="email"
               value={formData.email}
               onChange={handleChange}
               onBlur={handleBlur}
               placeholder="Enter email"
-              autoComplete="email"
+              autoComplete="username"
               aria-invalid={Boolean(emailError)}
-              aria-describedby={emailError ? 'email-error' : undefined}
+              aria-describedby={
+                emailError ? 'email-error' : undefined
+              }
             />
-            {emailError && <span id="email-error" className="field-error">{errors.email}</span>}
+
+            {emailError && (
+              <span id="email-error" className="field-error">
+                {errors.email}
+              </span>
+            )}
           </div>
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
+
             <div className="password-input-wrap">
               <input
                 id="password"
@@ -153,20 +306,39 @@ function Login() {
                 placeholder="Enter your password"
                 autoComplete="current-password"
                 aria-invalid={Boolean(passwordError)}
-                aria-describedby={passwordError ? 'password-error' : undefined}
+                aria-describedby={
+                  passwordError ? 'password-error' : undefined
+                }
               />
-              <button type="button" className="password-toggle" onClick={() => setShowPassword((shown) => !shown)}>
+
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword((shown) => !shown)}
+              >
                 {showPassword ? 'Hide' : 'Show'}
               </button>
             </div>
-            {passwordError && <span id="password-error" className="field-error">{errors.password}</span>}
+
+            {passwordError && (
+              <span id="password-error" className="field-error">
+                {errors.password}
+              </span>
+            )}
           </div>
 
-          <button type="submit" className="btn btn-primary full-width" disabled={isSubmitting}>
+          <button
+            type="submit"
+            className="btn btn-primary full-width"
+            disabled={isSubmitting}
+          >
             {isSubmitting ? 'Logging in...' : 'Login'}
           </button>
 
-          <Link to="/register" className="btn btn-secondary full-width text-center">
+          <Link
+            to="/register"
+            className="btn btn-secondary full-width text-center"
+          >
             Create an account
           </Link>
 
@@ -174,9 +346,13 @@ function Login() {
         </form>
 
         {message && (
-          <p className="form-message form-message-error" role="alert">
+          <p
+            className="form-message form-message-error"
+            role="alert"
+          >
             {message}{' '}
-            {(message.includes('register') || message.includes('Register')) && (
+            {(message.includes('register') ||
+              message.includes('Register')) && (
               <Link
                 to="/register"
                 state={{
