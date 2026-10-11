@@ -1,18 +1,40 @@
-import { useState } from 'react';
-import { users as initialUsers } from '../data/sampleData';
+
+import { useEffect, useState } from 'react';
+import { fetchAdminUsers } from '../services/admin';
 
 function ManageUsers() {
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const handleToggleStatus = (userId) => {
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === userId
-          ? { ...user, status: user.status === 'Active' ? 'Inactive' : 'Active' }
-          : user,
-      ),
-    );
-  };
+  useEffect(() => {
+    let isCurrent = true;
+
+    async function loadUsers() {
+      try {
+        const loadedUsers = await fetchAdminUsers();
+
+        if (isCurrent) {
+          setUsers(loadedUsers);
+          setError('');
+        }
+      } catch (requestError) {
+        if (isCurrent) {
+          setError(requestError.message || 'Unable to load users.');
+        }
+      } finally {
+        if (isCurrent) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadUsers();
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
 
   return (
     <div className="admin-manage-page">
@@ -23,42 +45,48 @@ function ManageUsers() {
         </div>
       </div>
 
+      {error && (
+        <p className="form-message form-message-error" role="alert">
+          {error}
+        </p>
+      )}
+
       <section className="panel-card table-panel">
-        <div className="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>User ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id}>
-                  <td>{user.id}</td>
-                  <td>{user.name}</td>
-                  <td>{user.email}</td>
-                  <td>{user.phone}</td>
-                  <td>{user.role}</td>
-                  <td>{user.status}</td>
-                  <td className="table-actions">
-                    <button type="button" className="link-btn">
-                      View
-                    </button>
-                    <button type="button" className="link-btn" onClick={() => handleToggleStatus(user.id)}>
-                      {user.status === 'Active' ? 'Deactivate' : 'Activate'}
-                    </button>
-                  </td>
+        {isLoading ? (
+          <p role="status">Loading users...</p>
+        ) : error ? (
+          <p>Unable to display users. Please try again later.</p>
+        ) : users.length === 0 ? (
+          <p>No users have registered yet.</p>
+        ) : (
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>User ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Role</th>
+                  <th>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user.id}>
+                    <td>{user.id}</td>
+                    <td>{user.name || '—'}</td>
+                    <td>{user.email}</td>
+                    <td>{user.phone || '—'}</td>
+                    <td>{user.role}</td>
+                    <td>{user.status ?? 'Not tracked'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </div>
   );

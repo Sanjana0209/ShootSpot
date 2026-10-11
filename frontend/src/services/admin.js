@@ -54,6 +54,15 @@ export async function fetchAdminBookings() {
   return parseResponse(response, 'Unable to load bookings.');
 }
 
+export async function fetchAdminUsers() {
+  const response = await authenticatedFetch(`${ADMIN_API_URL}/users`);
+  const users = await parseResponse(response, 'Unable to load users.');
+  if (!Array.isArray(users)) {
+    throw new Error('The server returned user data in an unexpected format.');
+  }
+  return users;
+}
+
 export async function updateAdminBookingStatus(id, status) {
   const response = await authenticatedFetch(`${ADMIN_API_URL}/bookings/${id}/status`, {
     method: 'PATCH',

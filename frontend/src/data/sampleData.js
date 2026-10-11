@@ -222,45 +222,6 @@ export const bookings = [
   },
 ];
 
-export const users = [
-  {
-    id: 'USR-101',
-    name: 'Aisha Verma',
-    email: 'aisha@example.com',
-    phone: '+91 98765 43210',
-    role: 'Customer',
-    status: 'Active',
-    profileImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80',
-  },
-  {
-    id: 'USR-102',
-    name: 'Rohit Nair',
-    email: 'rohit@example.com',
-    phone: '+91 91234 56789',
-    role: 'Host',
-    status: 'Active',
-    profileImage: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
-  },
-  {
-    id: 'USR-103',
-    name: 'Priya Shah',
-    email: 'priya@example.com',
-    phone: '+91 99887 66554',
-    role: 'Customer',
-    status: 'Inactive',
-    profileImage: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=300&q=80',
-  },
-  {
-    id: 'USR-104',
-    name: 'Admin User',
-    email: 'admin@shootspot.com',
-    phone: '+91 90000 11122',
-    role: 'Admin',
-    status: 'Active',
-    profileImage: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&q=80',
-  },
-];
-
 export const reviews = [
   {
     id: 'R-01',
