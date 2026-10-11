@@ -1,0 +1,23 @@
+# Environment secrets
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Java build output
+**/target/
+
+# Frontend dependencies and build output
+**/node_modules/
+**/dist/
+**/build/
+
+# Logs and IDE files
+*.log
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+/backend/bin/
