@@ -1,7 +1,7 @@
 import { authenticatedFetch } from './auth';
 import { AuthenticationRequiredError } from './bookings';
 
-const API_ROOT = 'http://https://shootspot.onrender.com/api';
+const API_ROOT = 'https://shootspot.onrender.com/api';
 
 async function responseError(response, fallback) {
   const errorData = await response.json().catch(() => ({}));
