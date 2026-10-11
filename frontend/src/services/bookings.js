@@ -1,6 +1,6 @@
 import { authenticatedFetch, getAuthToken, readApiError } from './auth.js';
 
-const BOOKINGS_API_URL = 'http://localhost:8080/api/bookings';
+const BOOKINGS_API_URL = 'http://https://shootspot.onrender.com/api/bookings';
 
 export class AuthenticationRequiredError extends Error {
   constructor() {

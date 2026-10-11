@@ -1,7 +1,7 @@
 import { authenticatedFetch } from './auth';
 
-const ADMIN_API_URL = 'http://localhost:8080/api/admin';
-const LOCATIONS_API_URL = 'http://localhost:8080/api/locations';
+const ADMIN_API_URL = 'http://https://shootspot.onrender.com/api/admin';
+const LOCATIONS_API_URL = 'http://https://shootspot.onrender.com/api/locations';
 
 async function parseResponse(response, fallback) {
   if (!response.ok) {

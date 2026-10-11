@@ -1,6 +1,6 @@
 import { authenticatedFetch, getAuthToken, readApiError } from './auth.js';
 
-const FAVORITES_API_URL = 'http://localhost:8080/api/favorites';
+const FAVORITES_API_URL = 'http://https://shootspot.onrender.com/api/favorites';
 
 async function requireSuccess(response, fallbackMessage) {
   if (!response.ok) {
