@@ -1,55 +1,41 @@
 
 import { useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+
 import { API_URL, saveAuthSession } from '../services/auth';
+
 import {
   getLoginDestination,
   getLoginFailureMessage,
   getLoginInitialForm,
 } from '../services/authFlow';
+
 import { validateEmail } from '../services/validation';
-
-const SAVED_ACCOUNTS_KEY = 'shootspot.savedAccounts';
-
-function getSavedAccounts() {
-  try {
-    const accounts = JSON.parse(
-      localStorage.getItem(SAVED_ACCOUNTS_KEY) || '[]',
-    );
-
-    return Array.isArray(accounts)
-      ? accounts.filter(
-          (email) => typeof email === 'string' && email.length > 0,
-        ).slice(0, 5)
-      : [];
-  } catch {
-    return [];
-  }
-}
 
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [formState, setFormState] = useState(() => ({
-  locationKey: location.key,
-  values: getLoginInitialForm(location.state),
-}));
-
-const [lastLocationKey, setLastLocationKey] = useState(location.key);
-
-if (lastLocationKey !== location.key) {
-  setLastLocationKey(location.key);
-  setFormState({
     locationKey: location.key,
     values: getLoginInitialForm(location.state),
-  });
-}
-  const formData = formState.locationKey === location.key
-    ? formState.values
-    : getLoginInitialForm(location.state);
+  }));
 
-  const [savedAccounts, setSavedAccounts] = useState(() => getSavedAccounts());
+  const [lastLocationKey, setLastLocationKey] = useState(location.key);
+
+  if (lastLocationKey !== location.key) {
+    setLastLocationKey(location.key);
+    setFormState({
+      locationKey: location.key,
+      values: getLoginInitialForm(location.state),
+    });
+  }
+
+  const formData =
+    formState.locationKey === location.key
+      ? formState.values
+      : getLoginInitialForm(location.state);
+
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [message, setMessage] = useState('');
@@ -70,32 +56,10 @@ if (lastLocationKey !== location.key) {
     }));
   };
 
-  const selectAccount = (email) => {
-    updateFormData({
-      email,
-      password: '',
-    });
-
-    setErrors({});
-    setTouched({});
-    setMessage('');
-    setShowPassword(false);
-  };
-
-  const useAnotherAccount = () => {
-    updateFormData({
-      email: '',
-      password: '',
-    });
-
-    setErrors({});
-    setTouched({});
-    setMessage('');
-    setShowPassword(false);
-  };
-
   const validate = (field, value) => {
-    if (field === 'email') return validateEmail(value);
+    if (field === 'email') {
+      return validateEmail(value);
+    }
 
     if (field === 'password' && !value) {
       return 'Password is required.';
@@ -120,7 +84,8 @@ if (lastLocationKey !== location.key) {
 
   const handleBlur = (event) => {
     const { name, value } = event.target;
-    const normalizedValue = name === 'email' ? value.trim() : value;
+    const normalizedValue =
+      name === 'email' ? value.trim() : value;
 
     updateFormData({ [name]: normalizedValue });
 
@@ -153,7 +118,9 @@ if (lastLocationKey !== location.key) {
     setTouched({ email: true, password: true });
     setErrors(validationErrors);
 
-    if (Object.values(validationErrors).some(Boolean)) return;
+    if (Object.values(validationErrors).some(Boolean)) {
+      return;
+    }
 
     submitting.current = true;
     setIsSubmitting(true);
@@ -179,26 +146,6 @@ if (lastLocationKey !== location.key) {
 
       saveAuthSession(authResponse);
 
-      const emailToRemember = normalizedEmail.toLowerCase();
-
-      try {
-        const updatedAccounts = [
-          emailToRemember,
-          ...getSavedAccounts().filter(
-            (email) => email.toLowerCase() !== emailToRemember,
-          ),
-        ].slice(0, 5);
-
-        localStorage.setItem(
-          SAVED_ACCOUNTS_KEY,
-          JSON.stringify(updatedAccounts),
-        );
-
-        setSavedAccounts(updatedAccounts);
-      } catch {
-        // Login should still work if browser storage is unavailable.
-      }
-
       const returnTo = getLoginDestination(
         authResponse.user,
         location.state?.returnTo,
@@ -207,11 +154,15 @@ if (lastLocationKey !== location.key) {
       navigate(returnTo, {
         replace: true,
         state: returnTo?.endsWith('/book')
-          ? { bookingDraft: location.state?.bookingDraft }
+          ? {
+              bookingDraft: location.state?.bookingDraft,
+            }
           : undefined,
       });
     } catch {
-      setMessage('Unable to connect to the server. Please try again.');
+      setMessage(
+        'Unable to connect to the server. Please try again.',
+      );
     } finally {
       submitting.current = false;
       setIsSubmitting(false);
@@ -233,38 +184,11 @@ if (lastLocationKey !== location.key) {
           </p>
         )}
 
-        {savedAccounts.length > 0 && (
-          <div className="saved-accounts">
-            <p className="helper-text">Choose an account</p>
-
-            {savedAccounts.map((email) => (
-              <button
-                key={email}
-                type="button"
-                className="btn btn-secondary full-width"
-                onClick={() => selectAccount(email)}
-                disabled={isSubmitting}
-              >
-                {email}
-              </button>
-            ))}
-
-            <button
-              type="button"
-              className="helper-text"
-              onClick={useAnotherAccount}
-              disabled={isSubmitting}
-            >
-              Use another account
-            </button>
-          </div>
-        )}
-
         <form
           className="auth-form"
           onSubmit={handleSubmit}
           noValidate
-          autoComplete="on"
+          autoComplete="off"
         >
           <div className="form-group">
             <label htmlFor="email">Email</label>
@@ -278,7 +202,7 @@ if (lastLocationKey !== location.key) {
               onChange={handleChange}
               onBlur={handleBlur}
               placeholder="Enter email"
-              autoComplete="username"
+              autoComplete="off"
               aria-invalid={Boolean(emailError)}
               aria-describedby={
                 emailError ? 'email-error' : undefined
@@ -304,7 +228,7 @@ if (lastLocationKey !== location.key) {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 placeholder="Enter your password"
-                autoComplete="current-password"
+                autoComplete="new-password"
                 aria-invalid={Boolean(passwordError)}
                 aria-describedby={
                   passwordError ? 'password-error' : undefined
@@ -314,7 +238,9 @@ if (lastLocationKey !== location.key) {
               <button
                 type="button"
                 className="password-toggle"
-                onClick={() => setShowPassword((shown) => !shown)}
+                onClick={() =>
+                  setShowPassword((shown) => !shown)
+                }
               >
                 {showPassword ? 'Hide' : 'Show'}
               </button>
@@ -351,6 +277,7 @@ if (lastLocationKey !== location.key) {
             role="alert"
           >
             {message}{' '}
+
             {(message.includes('register') ||
               message.includes('Register')) && (
               <Link
