@@ -16,7 +16,18 @@ public class BookingAvailabilitySchemaMigration implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        jdbcTemplate.execute(
-                "ALTER TABLE bookings DROP CONSTRAINT IF EXISTS uk_booking_location_date_time");
+        Integer constraintCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.table_constraints " +
+                "WHERE table_schema = DATABASE() " +
+                "AND table_name = 'bookings' " +
+                "AND constraint_name = 'uk_booking_location_date_time'",
+                Integer.class
+        );
+
+        if (constraintCount != null && constraintCount > 0) {
+            jdbcTemplate.execute(
+                    "ALTER TABLE bookings DROP INDEX uk_booking_location_date_time"
+            );
+        }
     }
 }

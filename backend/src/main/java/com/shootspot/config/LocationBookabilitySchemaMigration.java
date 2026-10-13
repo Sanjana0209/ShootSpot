@@ -16,7 +16,18 @@ public class LocationBookabilitySchemaMigration implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        jdbcTemplate.execute(
-                "ALTER TABLE locations ADD COLUMN IF NOT EXISTS bookable BOOLEAN NOT NULL DEFAULT FALSE");
+        Integer columnCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.columns " +
+                "WHERE table_schema = DATABASE() " +
+                "AND table_name = 'locations' " +
+                "AND column_name = 'bookable'",
+                Integer.class
+        );
+
+        if (columnCount != null && columnCount == 0) {
+            jdbcTemplate.execute(
+                    "ALTER TABLE locations ADD COLUMN bookable BOOLEAN NOT NULL DEFAULT FALSE"
+            );
+        }
     }
 }

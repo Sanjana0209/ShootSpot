@@ -20,4 +20,6 @@
 .idea/
 .DS_Store
 Thumbs.db
-/backend/bin/
+/backend/bin/backend/error.txt
+backend/bin/
+backend/error.txt
