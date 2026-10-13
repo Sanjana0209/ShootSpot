@@ -1,4 +1,4 @@
-const LOCATIONS_API_URL = 'https://shootspot.onrender.com/api/locations';
+const LOCATIONS_API_URL = 'https://shootspot-backend.onrender.com/api/locations';
 
 export class LocationNotFoundError extends Error {
   constructor() {
