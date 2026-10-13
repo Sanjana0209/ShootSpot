@@ -1,4 +1,4 @@
-const API_URL = 'https://shootspot.onrender.com/api/auth';
+const API_URL = 'https://shootspot-backend.onrender.com/api/auth';
 const TOKEN_KEY = 'shootspot.authToken';
 const USER_KEY = 'shootspot.authUser';
 
